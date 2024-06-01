@@ -1,14 +1,56 @@
-php:
-  preset: laravel
-  version: 8
-  disabled:
-    - no_unused_imports
-  finder:
-    not-name:
-      - index.php
-      - server.php
-js:
-  finder:
-    not-name:
-      - webpack.mix.js
-css: true
+# .github/workflows/main.yml
+
+name: Laravel CI/CD
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    name: PHPUnit
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+      
+    - name: Set up PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '8.0'
+        extensions: mbstring, zip, pdo, pdo_mysql
+      
+    - name: Copy .env file
+      run: cp .env.example .env
+      
+    - name: Update Composer Dependencies
+      run: composer update --with-all-dependencies --prefer-dist --no-progress --no-suggest
+      
+    - name: Generate application key
+      run: php artisan key:generate
+      
+    - name: Run PHPUnit tests
+      run: php artisan test
+
+  deploy:
+    name: Deploy to Production
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+      
+    - name: Set up SSH keys
+      uses: webfactory/ssh-agent@v0.5.3
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+        
+    - name: Install SSH Client
+      run: apt-get update && apt-get install openssh-client
+      
+    - name: Deploy to Production
+      run: ssh user@yourserver.com 'cd /path/to/your/app && git pull origin main && composer install && php artisan migrate --force'

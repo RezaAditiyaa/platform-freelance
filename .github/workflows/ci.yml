@@ -6,51 +6,60 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
-  test:
-    name: PHPUnit
+  tests:
+    name: Run tests
     runs-on: ubuntu-latest
-    
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
-      
-    - name: Set up PHP
-      uses: shivammathur/setup-php@v2
-      with:
-        php-version: '8.0'
-        extensions: mbstring, zip, pdo, pdo_mysql
-      
-    - name: Copy .env file
-      run: cp .env.example .env
-      
-    - name: Update Composer Dependencies
-      run: composer update --with-all-dependencies --prefer-dist --no-progress --no-suggest
-      
-    - name: Generate application key
-      run: php artisan key:generate
-      
-    - name: Run PHPUnit tests
-      run: php artisan test
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-  deploy:
-    name: Deploy to Production
-    needs: test
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+      - name: install PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.2
+
+      - name: copy .env file
+        run: |
+          cp .env.ci .env
+
+      - name: Install composer
+        run: |
+          composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
+      
+      - name: Run test
+        run: |
+          php artisan test
+      
+      - name: Cache composer dependencies
+        uses: actions/cache@v2
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('**/composer/lock')}}
+          restore-keys: |
+            composer-
+
+  # deploy:
+  #   name: Deploy to Production
+  #   needs: test
+  #   runs-on: ubuntu-latest
+  #   if: github.ref == 'refs/heads/main'
     
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+  #   steps:
+  #   - name: Checkout repository
+  #     uses: actions/checkout@v2
       
-    - name: Set up SSH keys
-      uses: webfactory/ssh-agent@v0.5.3
-      with:
-        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+  #   - name: Set up SSH keys
+  #     uses: webfactory/ssh-agent@v0.5.3
+  #     with:
+  #       ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
         
-    - name: Install SSH Client
-      run: apt-get update && apt-get install openssh-client
+  #   - name: Install SSH Client
+  #     run: apt-get update && apt-get install openssh-client
       
-    - name: Deploy to Production
-      run: ssh user@yourserver.com 'cd /path/to/your/app && git pull origin main && composer install && php artisan migrate --force'
+  #   - name: Deploy to Production
+  #     run: ssh user@yourserver.com 'cd /path/to/your/app && git pull origin main && composer install && php artisan migrate --force'

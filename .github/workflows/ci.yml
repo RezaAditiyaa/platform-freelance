@@ -1,3 +1,5 @@
+# .github/workflows/main.yml
+
 name: Laravel CI/CD
 
 on:
@@ -42,3 +44,24 @@ jobs:
           key: composer-${{ hashFiles('**/composer/lock')}}
           restore-keys: |
             composer-
+
+  # deploy:
+  #   name: Deploy to Production
+  #   needs: test
+  #   runs-on: ubuntu-latest
+  #   if: github.ref == 'refs/heads/main'
+    
+  #   steps:
+  #   - name: Checkout repository
+  #     uses: actions/checkout@v2
+      
+  #   - name: Set up SSH keys
+  #     uses: webfactory/ssh-agent@v0.5.3
+  #     with:
+  #       ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+        
+  #   - name: Install SSH Client
+  #     run: apt-get update && apt-get install openssh-client
+      
+  #   - name: Deploy to Production
+  #     run: ssh user@yourserver.com 'cd /path/to/your/app && git pull origin main && composer install && php artisan migrate --force'
